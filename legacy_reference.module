@@ -13,72 +13,26 @@ function legacy_reference_help($path, $arg) {
     case 'admin/help#text':
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t("The Text module defines various text field types for the Field module. A text field may contain plain text only, or optionally, may use Drupal's <a href='@filter-help'>text filters</a> to securely manage HTML output. Text input fields may be either a single line (text field), multiple lines (text area), or for greater input control, a select box, checkbox, or radio buttons. If desired, the field can be validated, so that it is limited to a set of allowed values. See the <a href='@field-help'>Field module help page</a> for more information about fields.", array('@field-help' => url('admin/help/field'), '@filter-help' => url('admin/help/filter'))) . '</p>';
+      $output .= '<p>' . t("The Legacy Reference module defines a field that can contain one or more legacy IDs. These legacy ids can be resolved to Drupal references (= taxonomy terms relations, node references) if they point to a Feeds feed_item.guid ID.") . '</p>';
       return $output;
   }
 }
 
 /**
  * Implements hook_field_info().
- *
- * Field settings:
- *   - max_length: the maximum length for a varchar field.
- * Instance settings:
- *   - text_processing: whether text input filters should be used.
- *   - display_summary: whether the summary field should be displayed.
- *     When empty and not displayed the summary will take its value from the
- *     trimmed value of the main text field.
  */
 function legacy_reference_field_info() {
   return array(
-    'text' => array(
-      'label' => t('Text'),
-      'description' => t('This field stores varchar text in the database.'),
-      'settings' => array('max_length' => 255),
-      'instance_settings' => array('text_processing' => 0),
-      'default_widget' => 'text_textfield',
-      'default_formatter' => 'text_default',
-    ),
-    'text_long' => array(
-      'label' => t('Long text'),
-      'description' => t('This field stores long text in the database.'),
-      'instance_settings' => array('text_processing' => 0),
+    'legacy_reference' => array(
+      'label' => t('Legacy reference'),
+      'description' => t('This field stores legacy ids, one per line in the database.'),
+      'instance_settings' => array(
+        'reference_field' => '',
+      ),
       'default_widget' => 'text_textarea',
       'default_formatter' => 'text_default',
     ),
-    'text_with_summary' => array(
-      'label' => t('Long text and summary'),
-      'description' => t('This field stores long text in the database along with optional summary text.'),
-      'instance_settings' => array('text_processing' => 1, 'display_summary' => 0),
-      'default_widget' => 'text_textarea_with_summary',
-      'default_formatter' => 'text_default',
-    ),
   );
-}
-
-/**
- * Implements hook_field_settings_form().
- */
-function legacy_reference_field_settings_form($field, $instance, $has_data) {
-  $settings = $field['settings'];
-
-  $form = array();
-
-  if ($field['type'] == 'text') {
-    $form['max_length'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Maximum length'),
-      '#default_value' => $settings['max_length'],
-      '#required' => TRUE,
-      '#description' => t('The maximum length of the field in characters.'),
-      '#element_validate' => array('_element_validate_integer_positive'),
-      // @todo: If $has_data, add a validate handler that only allows
-      // max_length to increase.
-      '#disabled' => $has_data,
-    );
-  }
-
-  return $form;
 }
 
 /**
@@ -87,23 +41,13 @@ function legacy_reference_field_settings_form($field, $instance, $has_data) {
 function legacy_reference_field_instance_settings_form($field, $instance) {
   $settings = $instance['settings'];
 
-  $form['text_processing'] = array(
-    '#type' => 'radios',
-    '#title' => t('Text processing'),
-    '#default_value' => $settings['text_processing'],
-    '#options' => array(
-      t('Plain text'),
-      t('Filtered text (user selects text format)'),
-    ),
+  $options = array('todo');
+  $form['reference_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Reference field'),
+    '#default_value' => $settings['display_summary'],
+    '#description' => t('Select that this legacy reference maps to. For instance a taxonomy field. When resolving references, Legacy reference field will attempt to find existing entities with matching legacy ids and configure the reference field specified here accordingly.'),
   );
-  if ($field['type'] == 'text_with_summary') {
-    $form['display_summary'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Summary input'),
-      '#default_value' => $settings['display_summary'],
-      '#description' => t('This allows authors to input an explicit summary, to be displayed instead of the automatically trimmed text when using the "Summary or trimmed" display type.'),
-    );
-  }
 
   return $form;
 }
