@@ -1,9 +1,7 @@
-name = Text
-description = Defines simple text field types.
+name = Legacy Reference
+description = Defines a field that can contain one or more legacy IDs. These legacy ids can be resolved to Drupal references if they point to a Feeds feed_item.guid ID.
 package = Core
 version = VERSION
 core = 7.x
 dependencies[] = field
-files[] = text.module
-files[] = text.test
-required = TRUE
+files[] = legacy_reference.module
