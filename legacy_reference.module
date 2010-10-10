@@ -28,6 +28,7 @@ function legacy_reference_field_info() {
       'description' => t('This field stores legacy ids, one per line in the database.'),
       'instance_settings' => array(
         'reference_field' => '',
+        'text_processing' => 0, // We are reusing text widgets, make sure they are properly configured.
       ),
       'default_widget' => 'text_textarea',
       'default_formatter' => 'legacy_reference_plain',
@@ -45,8 +46,9 @@ function legacy_reference_field_instance_settings_form($field, $instance) {
   $form['reference_field'] = array(
     '#type' => 'select',
     '#title' => t('Reference field'),
-    '#default_value' => $settings['display_summary'],
     '#description' => t('Select that this legacy reference maps to. For instance a taxonomy field. When resolving references, Legacy reference field will attempt to find existing entities with matching legacy ids and configure the reference field specified here accordingly.'),
+    '#options' => $options,
+    '#default_value' => $settings['reference_field'],
   );
 
   return $form;
