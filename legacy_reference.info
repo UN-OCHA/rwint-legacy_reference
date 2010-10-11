@@ -1,5 +1,5 @@
 name = Legacy Reference
-description = Defines a field that can contain one or more legacy IDs. These legacy ids can be resolved to Drupal references if they point to a Feeds feed_item.guid ID.
+description = Defines a field that can contain one or more legacy IDs that can be resolved to a Drupal reference.
 package = Core
 version = VERSION
 core = 7.x
