@@ -126,6 +126,24 @@ function legacy_reference_field_widget_info_alter(&$info) {
 }
 
 /**
+ * Implements hook_feeds_processor_targets_alter().
+ *
+ * @see FeedsNodeProcessor::getMappingTargets().
+ */
+function legacy_reference_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_name) {
+  foreach (field_info_instances($entity_type, $bundle_name) as $name => $instance) {
+    $info = field_info_field($name);
+    if ($info['type'] == 'legacy_reference') {
+      $targets[$name] = array(
+        'name' => $instance['label'],
+        'callback' => 'field_feeds_set_target',
+        'description' => t('The @label field of the node.', array('@label' => $instance['label'])),
+      );
+    }
+  }
+}
+
+/**
  * @defgroup mapping Mapping functions
  * {
  */
