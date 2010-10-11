@@ -113,7 +113,7 @@ function legacy_reference_field_formatter_info() {
 function legacy_reference_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   if ($display['type'] == 'legacy_reference_plain') {
     foreach ($items as $delta => $item) {
-      $element[$delta] = array('#markup' => check_plain($item[$column]));
+      $element[$delta] = array('#markup' => check_plain($item['value']));
     }
   }
 }
