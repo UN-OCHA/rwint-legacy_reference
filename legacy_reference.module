@@ -42,7 +42,12 @@ function legacy_reference_field_info() {
 function legacy_reference_field_instance_settings_form($field, $instance) {
   $settings = $instance['settings'];
 
-  $options = array('todo');
+  $options = array();
+  foreach (field_info_instances($instance['entity_type'], $instance['bundle']) as $k => $v) {
+    if ($k != $instance['field_name']) {
+      $options[$k] = $v['label'];
+    }
+  }
   $form['reference_field'] = array(
     '#type' => 'select',
     '#title' => t('Reference field'),
