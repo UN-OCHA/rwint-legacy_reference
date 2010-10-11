@@ -43,15 +43,17 @@ function legacy_reference_field_instance_settings_form($field, $instance) {
   $settings = $instance['settings'];
 
   $options = array();
+  $known_fields = legacy_reference_reference_field_info();
   foreach (field_info_instances($instance['entity_type'], $instance['bundle']) as $k => $v) {
-    if ($k != $instance['field_name']) {
+    $field_info = field_info_field($k);
+    if ($k != $instance['field_name'] && isset($known_fields[$field_info['type']])) {
       $options[$k] = $v['label'];
     }
   }
   $form['reference_field'] = array(
     '#type' => 'select',
     '#title' => t('Reference field'),
-    '#description' => t('Select that this legacy reference maps to. For instance a taxonomy field. When resolving references, Legacy reference field will attempt to find existing entities with matching legacy ids and configure the reference field specified here accordingly.'),
+    '#description' => t('Select that this legacy reference maps to. For instance a taxonomy field. When resolving references, Legacy reference field will attempt to find existing entities with matching legacy ids and configure the reference field specified here accordingly. Allowed field types: <strong>@types</strong>', array('@types' => implode(', ', array_keys($known_fields)))),
     '#options' => $options,
     '#default_value' => $settings['reference_field'],
   );
@@ -122,3 +124,25 @@ function legacy_reference_field_formatter_view($entity_type, $entity, $field, $i
 function legacy_reference_field_widget_info_alter(&$info) {
   $info['text_textarea']['field types'][] = 'legacy_reference';
 }
+
+/**
+ * @defgroup mapping Mapping functions
+ * {
+ */
+
+/**
+ * Return an array of allowed reference fields.
+ *
+ * @return
+ *   An array in the format array('field_type' => 'mapping_callback');
+ */
+function legacy_reference_reference_field_info() {
+  return array(
+    'taxonomy_term_reference' => 'legacy_reference_map_taxonomy',
+  );
+}
+
+/**
+ * @defgroup
+ * }
+ */
