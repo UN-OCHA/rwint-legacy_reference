@@ -1,47 +1,54 @@
 <?php
 
-// Implementation of hook_cron
+/**
+ * Implements hook_cron().
+ */
 function legacy_reference_cron() {
-  $field_names = get_legacy_field_info($switch = TRUE);
-  $content_types = get_legacy_field_info();
-  foreach($content_types as $content_type) {
-    foreach($field_names as $field_name) {
-      legacy_reference_resolve_legacy_ids($content_type, $field_name);
-    }
+  $entity_types = legacy_reference_get_legacy_field_info();
+  if (variable_get('legacy_last_nid', 0)) {
+    legacy_reference_resolve_legacy_ids($entity_types);
   }
 }
 
-function legacy_reference_resolve_legacy_ids($content_type, $field_name) {
+/**
+ * Maps legacy ids to corresponding term ids.
+ */
+function legacy_reference_resolve_legacy_ids($entity_types) {
   $last_nid = variable_get('legacy_last_nid', 0);
 
   $nodes = db_select('node')
-    ->fields('node', array('nid'))
-    ->condition('type', $content_type)
+    ->fields('node', array('nid', 'type'))
+    ->condition('type', $entity_types, 'IN')
     ->condition('nid', $last_nid, '>')
     ->range(0, 100)
     ->execute();
 
-  $field_settings = field_info_instance('node', $field_name, $content_type);
-  $reference_field = $field_settings['settings']['reference_field'];
-
   foreach ($nodes as $node) {
-    $current_node = node_load($node->nid);
-    $legacy_ids = $current_node->{$field_name}['und'][0]['value'];
-    $legacy_ids = explode('\n', $legacy_ids);
-    $tids = array();
-    foreach ($legacy_ids as $lid) {
-      $tids = look_up_tids($lid);
-    }
+    $last_nid = $node->nid;
+    foreach (legacy_reference_get_legacy_field_info(TRUE) as $field_name) {
+      $field_settings = field_info_instance('node', $field_name, $node->type);
+      $reference_field = $field_settings['settings']['reference_field'];
+      $current_node = node_load($node->nid);
+      $legacy_ids = $current_node->{$field_name}['und'][0]['value'];
+      $legacy_ids = explode('\n', $legacy_ids);
+      $tids = array();
+      foreach ($legacy_ids as $lid) {
+        $tids = legacy_reference_look_up_tids($lid);
+      }
 
-    if (isset($tids)) {
-      $current_node->{$reference_field}['und'] = $tids;
-      node_save($current_node);
+      if (isset($tids)) {
+        $current_node->{$reference_field}['und'] = $tids;
+        node_save($current_node);
+      }
     }
-    variable_set('legacy_last_nid', $current_node->nid);
   }
+  variable_set('legacy_last_nid', $last_nid);
 }
 
-function get_legacy_field_info($switch = FALSE) {
+/**
+ * Returns legacy field names and their associated entity types.
+ */
+function legacy_reference_get_legacy_field_info($switch = FALSE) {
   $bundles = field_info_bundles('node');
 
   foreach($bundles as $key => $value) {
@@ -49,7 +56,7 @@ function get_legacy_field_info($switch = FALSE) {
       $field = field_info_field($fields['field_name']);
       if ($field['type'] == 'legacy_reference') {
         $field_names[] = $field['field_name'];
-        $content_types[] = $field['bundles']['node'];
+        $entity_types = $field['bundles']['node'];
       }
     }
   }
@@ -57,11 +64,14 @@ function get_legacy_field_info($switch = FALSE) {
     return array_unique($field_names);
   }
   else {
-    return array_unique($content_types[0]);
+    return array_unique($entity_types);
   }
 }
 
-function look_up_tids($legacy_id) {
+/**
+ * Looks up matching term ids.
+ */
+function legacy_reference_look_up_tids($legacy_id) {
   if (isset($legacy_id)) {
     $results = db_select('feeds_item')
     ->fields('feeds_item', array('entity_id'))
@@ -74,4 +84,13 @@ function look_up_tids($legacy_id) {
     }
     return $tids;
   }
+}
+
+/**
+ * Sets legacy_last_nid in variable table which will allows
+ * legacy mapping to begin. This prevents mapping before
+ * all feeds are imported.
+ */
+function legacy_reference_start_resolving() {
+  variable_set('legacy_last_nid', 0);
 }
