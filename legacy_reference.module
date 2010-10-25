@@ -1,5 +1,4 @@
 <?php
-require_once('legacy_reference.cron.inc');
 
 /**
  * @file
@@ -17,6 +16,26 @@ function legacy_reference_help($path, $arg) {
       $output .= '<p>' . t("The Legacy Reference module defines a field that can contain one or more legacy IDs. These legacy ids can be resolved to Drupal references (= taxonomy terms relations, node references) if they point to a Feeds feed_item.guid ID.") . '</p>';
       return $output;
   }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function legacy_reference_cron() {
+  require_once('legacy_reference.cron.inc');
+  $entity_types = legacy_reference_get_legacy_field_info();
+  if (variable_get('legacy_last_nid', 0)) {
+    legacy_reference_resolve_legacy_ids($entity_types);
+  }
+}
+
+/**
+ * Sets legacy_last_nid in variable table which will allows
+ * legacy mapping to begin. This prevents mapping before
+ * all feeds are imported.
+ */
+function legacy_reference_start_resolving() {
+  variable_set('legacy_last_nid', 0);
 }
 
 /**

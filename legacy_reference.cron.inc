@@ -1,16 +1,6 @@
 <?php
 
 /**
- * Implements hook_cron().
- */
-function legacy_reference_cron() {
-  $entity_types = legacy_reference_get_legacy_field_info();
-  if (variable_get('legacy_last_nid', 0)) {
-    legacy_reference_resolve_legacy_ids($entity_types);
-  }
-}
-
-/**
  * Maps legacy ids to corresponding term ids.
  */
 function legacy_reference_resolve_legacy_ids($entity_types) {
@@ -84,13 +74,4 @@ function legacy_reference_look_up_tids($legacy_id) {
     }
     return $tids;
   }
-}
-
-/**
- * Sets legacy_last_nid in variable table which will allows
- * legacy mapping to begin. This prevents mapping before
- * all feeds are imported.
- */
-function legacy_reference_start_resolving() {
-  variable_set('legacy_last_nid', 0);
 }
