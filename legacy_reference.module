@@ -24,7 +24,8 @@ function legacy_reference_help($path, $arg) {
 function legacy_reference_cron() {
   require_once('legacy_reference.cron.inc');
   $entity_types = legacy_reference_get_legacy_field_info();
-  if (variable_get('legacy_last_nid', 0)) {
+  $last_nid = variable_get('legacy_last_nid');
+  if (isset($last_nid)) {
     legacy_reference_resolve_legacy_ids($entity_types);
   }
 }
