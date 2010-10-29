@@ -62,7 +62,7 @@ function legacy_reference_get_legacy_field_info($switch = FALSE) {
  * Looks up matching term ids.
  */
 function legacy_reference_look_up_tids($legacy_id) {
-  if (isset($legacy_id)) {
+  if (!empty($legacy_id)) {
     $results = db_select('feeds_item')
     ->fields('feeds_item', array('entity_id'))
     ->condition('guid', $legacy_id, '=')
