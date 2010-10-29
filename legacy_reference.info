@@ -5,3 +5,4 @@ version = VERSION
 core = 7.x
 dependencies[] = field
 files[] = legacy_reference.module
+files[] = tests/legacy_id_resolving.test

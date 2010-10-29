@@ -1,0 +1,156 @@
+<?php
+class LegacyIdResolvingTest extends FeedsWebTestCase {
+  protected $privileged_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Legacy ID Resolving',
+      'description' => 'Tests if legacy id resolving is functional.',
+      'group' => 'Legacy Reference',
+    );
+  }
+
+  public function setUp() {
+    // Enable any modules required for the test
+    parent::setUp(array('legacy_reference'));
+    // Create and log in our privileged user.
+    $this->privileged_user = $this->drupalCreateUser(array(
+      'bypass node access',
+      'administer feeds',
+      'administer taxonomy',
+      'administer content types',
+    ));
+    $this->drupalLogin($this->privileged_user);
+  }
+
+  public function testLegacyIdResolving() {
+    // Create an term importer.
+    $this->createImporterConfiguration('Term import', 'term_import');
+
+    // Set and configure plugins and mappings.
+    $this->setPlugin('term_import', 'FeedsFileFetcher');
+    $this->setPlugin('term_import', 'FeedsCSVParser');
+    $this->setPlugin('term_import', 'FeedsTermProcessor');
+
+    // Configure mappings.
+    $this->addMappings('term_import',
+      array(
+        array(
+          'source' => 'name',
+          'target' => 'name',
+          'unique' => FALSE,
+        ),
+        array(
+          'source' => 'guid',
+          'target' => 'guid',
+          'unique' => FALSE,
+        )
+      )
+    );
+
+    // Use standalone form.
+    $edit = array(
+      'content_type' => '',
+    );
+    $this->drupalPost('admin/structure/feeds/edit/term_import/settings', $edit, 'Save');
+
+    // Create a new test vocabulary.
+    $edit = array(
+      'name' => 'Test vocab',
+      'machine_name' => 'test_vocab',
+    );
+    $this->drupalPost('admin/structure/taxonomy/add', $edit, t('Save'));
+
+    $edit = array(
+      'vocabulary' => 'test_vocab',
+    );
+    $this->drupalPost('admin/structure/feeds/edit/term_import/settings/FeedsTermProcessor', $edit, t('Save'));
+
+    // Import and assert.
+    $this->importFile('term_import', drupal_get_path('module', 'legacy_reference') .'/tests/feeds/vocab.csv');
+    $this->assertText('Created 5 terms');
+    $this->drupalGet('admin/structure/taxonomy/test_vocab');
+
+    // Add taxonomy reference field to article content type.
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Taxonomy',
+      'fields[_add_new_field][field_name]' => 'taxonomy',
+      'fields[_add_new_field][type]' => 'taxonomy_term_reference',
+      'fields[_add_new_field][widget_type]' => 'options_select'
+    );
+
+    $this->drupalPost('admin/structure/types/manage/article/fields', $edit, 'Save');
+    $edit = array(
+      'field[settings][allowed_values][0][vocabulary]' => 'test_vocab'
+    );
+    $this->drupalPost(NULL, $edit, t('Save field settings'));
+    $this->drupalPost(NULL, $edit, t('Save settings'));
+    $this->assertText('Saved Taxonomy configuration.');
+
+    // Add legacy reference field to article content type.
+    $edit = array(
+      'fields[_add_new_field][label]' => 'Legacy',
+      'fields[_add_new_field][field_name]' => 'legacy',
+      'fields[_add_new_field][type]' => 'legacy_reference',
+      'fields[_add_new_field][widget_type]' => 'text_textarea'
+    );
+    $this->drupalPost('admin/structure/types/manage/article/fields', $edit, 'Save');
+    $edit = array();
+    $this->drupalPost(NULL, $edit, t('Save field settings'));
+    $edit = array(
+      'instance[settings][reference_field]' => 'field_taxonomy'
+    );
+    $this->drupalPost(NULL, $edit, t('Save settings'));
+    $this->assertText('Saved Legacy configuration.');
+
+    // Create an importer configuration.
+    $this->createImporterConfiguration('Syndication', 'syndication');
+    $this->addMappings('syndication',
+      array(
+        array(
+          'source' => 'title',
+          'target' => 'title',
+          'unique' => FALSE,
+        ),
+        array(
+          'source' => 'description',
+          'target' => 'body',
+          'unique' => FALSE,
+        ),
+        array(
+          'source' => 'timestamp',
+          'target' => 'created',
+          'unique' => FALSE,
+        ),
+        array(
+          'source' => 'url',
+          'target' => 'url',
+          'unique' => TRUE,
+        ),
+        array(
+          'source' => 'guid',
+          'target' => 'field_legacy',
+          'unique' => FALSE,
+        ),
+      )
+    );
+
+    // Import nodes.
+    $url = $GLOBALS['base_url'] .'/'. drupal_get_path('module', 'legacy_reference') .'/tests/feeds/nodes.rss';
+    $nid = $this->createFeedNode('syndication', $url);
+
+    // Make sure nodes were imported.
+    $this->assertText('Created 10 nodes');
+
+    // Kick off legacy id resolving.
+    variable_set('legacy_last_nid', 0);
+    $this->cronRun();
+
+    // Query the taxonomy reference field and check if terms were resolved.
+    $result = db_query('SELECT * FROM {field_data_field_taxonomy}');
+    $row_count = $result->rowCount();
+
+    // Check that number of terms resolved is equal to the expected terms.
+    $this->assertEqual($row_count, 4);
+  }
+}

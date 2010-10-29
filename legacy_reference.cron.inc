@@ -77,6 +77,8 @@ function legacy_reference_look_up_tids($legacy_id) {
     foreach ($results as $result) {
       $tids[] = array('tid' => $result->entity_id);
     }
-    return $tids;
+    if (isset($tids)) {
+      return $tids;
+    }
   }
 }
