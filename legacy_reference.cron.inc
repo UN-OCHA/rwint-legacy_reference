@@ -23,7 +23,7 @@ function legacy_reference_resolve_legacy_ids($entity_types) {
         $legacy_ids = $current_node->{$field_name}['und'][0]['value'];
       }
       else {
-        $legacy_ids = array();
+        $legacy_ids = '';
       }
       $legacy_ids = explode('\n', $legacy_ids);
       $tids = array();
