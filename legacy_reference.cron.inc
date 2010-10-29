@@ -19,7 +19,12 @@ function legacy_reference_resolve_legacy_ids($entity_types) {
       $field_settings = field_info_instance('node', $field_name, $node->type);
       $reference_field = $field_settings['settings']['reference_field'];
       $current_node = node_load($node->nid);
-      $legacy_ids = $current_node->{$field_name}['und'][0]['value'];
+      if (isset($current_node->{$field_name}['und'][0]['value'])) {
+        $legacy_ids = $current_node->{$field_name}['und'][0]['value'];
+      }
+      else {
+        $legacy_ids = array();
+      }
       $legacy_ids = explode('\n', $legacy_ids);
       $tids = array();
       foreach ($legacy_ids as $lid) {
