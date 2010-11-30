@@ -159,7 +159,7 @@ function legacy_reference_feeds_processor_targets_alter(&$targets, $entity_type,
     if ($info['type'] == 'legacy_reference') {
       $targets[$name] = array(
         'name' => $instance['label'],
-        'callback' => 'field_feeds_set_target',
+        'callback' => 'field_feeds_set_target_text',
         'description' => t('The @label field of the node.', array('@label' => $instance['label'])),
       );
     }
