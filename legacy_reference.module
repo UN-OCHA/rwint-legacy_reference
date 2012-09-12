@@ -242,7 +242,7 @@ function legacy_reference_feeds_processor_targets_alter(&$targets, $entity_type,
     if ($info['type'] == 'legacy_reference') {
       $targets[$name] = array(
         'name' => $instance['label'],
-        'callback' => 'field_feeds_set_target_text',
+        'callback' => 'legacy_reference_feeds_set_target',
         'description' => t('The @label field of the node.', array('@label' => $instance['label'])),
       );
     }
@@ -253,6 +253,18 @@ function legacy_reference_feeds_processor_targets_alter(&$targets, $entity_type,
  * @defgroup mapping Mapping functions
  * {
  */
+
+/**
+ * Callback for mapping legacy_reference fields.
+ */
+function legacy_reference_feeds_set_target($source, $entity, $target, $value) {
+  // Merge multiple values into one.
+  if (is_array($value)) {
+    $value = implode("\n", $value);
+  }
+
+  return field_feeds_set_target_text($source, $entity, $target, $value);
+}
 
 /**
  * Return an array of allowed reference fields.
